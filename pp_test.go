@@ -7,7 +7,7 @@ import (
 )
 
 func TestReadErr(t *testing.T) {
-	pipe := &PP{}
+	pipe := PP{}
 
 	pipe.
 		Pull(pseudoReader{"1", errors.New("pseudoReader 1")}).
@@ -27,7 +27,7 @@ func TestReadErr(t *testing.T) {
 }
 
 func TestTransformErr(t *testing.T) {
-	pipe := &PP{}
+	pipe := PP{}
 
 	pipe.
 		Pull(pseudoReader{"1", nil}).
@@ -47,7 +47,7 @@ func TestTransformErr(t *testing.T) {
 }
 
 func TestWriteErr(t *testing.T) {
-	pipe := &PP{}
+	pipe := PP{}
 
 	pipe.
 		Pull(pseudoReader{"1", nil}).
@@ -67,7 +67,7 @@ func TestWriteErr(t *testing.T) {
 }
 
 func TestReadFlushErr(t *testing.T) {
-	pipe := &PP{}
+	pipe := PP{}
 
 	pipe.
 		Pull(pseudoReader{"1", nil}).
@@ -87,7 +87,7 @@ func TestReadFlushErr(t *testing.T) {
 }
 
 func TestWriteFlushErr(t *testing.T) {
-	pipe := &PP{}
+	pipe := PP{}
 
 	pipe.
 		Pull(pseudoReader{"1", nil}).
@@ -107,7 +107,7 @@ func TestWriteFlushErr(t *testing.T) {
 }
 
 func TestPP(t *testing.T) {
-	pipe := &PP{}
+	pipe := PP{}
 
 	pipe.
 		Pull(pseudoReader{"1", nil}).
