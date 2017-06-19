@@ -28,20 +28,19 @@ go io.Copy(
 to
 
 ```go
+  pipe := PP{}
+  pipe.
+    Pull(src).
+    Pull(outerReader1()).
+    Pull(outerReader2()).
+    Pull(outerReader3()).
+    Push(outerWriter1()).
+    Push(outerWriter2()).
+    Push(outerWriter3()).
+    Push(sink)
 
-	pipe.
-		Pull(src).
-		Pull(outerReader1()).
-		Pull(outerReader2()).
-		Pull(outerReader3()).
-		Push(outerWriter1()).
-		Push(outerWriter2()).
-		Push(outerWriter3()).
-		Push(sink)
-
-	res := pipe.Copy(make([]byte, 1024))
+  res := pipe.Copy(make([]byte, 1024))
   log.Printf("read %v / wrote %v / err %v\n",res.Read(), res.Wrote(), res.Error())
-
 ```
 
 # Problem
