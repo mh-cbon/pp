@@ -5,8 +5,7 @@ POC to work sanely with `io.Reader` / `io.Writer`.
 From
 
 ```go
-n, err :==
-go io.Copy(
+n, err := io.Copy(
   outerWriter1(
     outerWriter2(
       outerWriter3(
@@ -22,7 +21,6 @@ go io.Copy(
     ),
   ),
 )
-
 ```
 
 to
