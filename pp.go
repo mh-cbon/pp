@@ -1,133 +1,110 @@
 package pp
 
-import "io"
+import (
+	"io"
+)
 
 // PP helps to pull from readers and pull to writers.
 type PP struct {
-	bridges []bridge
+	steps []steper
 }
 
 // Pull from a reader
 func (p *PP) Pull(r io.Reader) *PP {
-	b := bridge{r: r}
-	p.bridges = append(p.bridges, b)
+	b := readStep{r}
+	p.steps = append(p.steps, b)
 	return p
 }
 
 // Push to a writer
 func (p *PP) Push(w io.Writer) *PP {
-	if len(p.bridges) == 0 {
-		panic("must pull data from somewhere")
-	}
-	b := p.bridges[len(p.bridges)-1]
-	b.w = w
-	p.bridges[len(p.bridges)-1] = b
+	b := writeStep{w}
+	p.steps = append(p.steps, b)
 	return p
 }
 
+type readStep struct {
+	r io.Reader
+}
+
+func (s readStep) do(p []byte) (n int, err error) {
+	return s.r.Read(p)
+}
+func (s readStep) flush() (p []byte, err error) {
+	if x, ok := s.r.(Flusher); ok {
+		return x.Flush()
+	}
+	return nil, nil
+}
+
+type writeStep struct {
+	w io.Writer
+}
+
+func (s writeStep) do(p []byte) (n int, err error) {
+	return s.w.Write(p)
+}
+func (s writeStep) flush() (p []byte, err error) {
+	if x, ok := s.w.(Flusher); ok {
+		return x.Flush()
+	}
+	return nil, nil
+}
+
+// steper does a step.
+type steper interface {
+	do(p []byte) (n int, err error)
+	flush() (p []byte, err error)
+}
+
+// Flusher flushes its buffer, n
 type Flusher interface {
-	Flush() (n int, e error)
+	Flush() (p []byte, e error)
 }
 
 // Copy data pulled from the readers, push them to the writers, stop and returns on first error.
 // on success, it returns a read error==io.EOF and a write error == nil.
-func (p *PP) Copy(buf []byte) (res Copy) {
-	for _, b := range p.bridges {
-		if b.r != nil {
-			n, readErr := b.Pull(buf)
-			res.read(n, readErr)
-			if readErr != nil {
+func (p PP) Copy(buf []byte) (writeLen int, readWriteErr error) {
+	var done bool
+	var n int
+	for {
+		for _, s := range p.steps {
+			n, readWriteErr = s.do(buf)
+
+			if _, ok := s.(writeStep); ok {
+				writeLen += n
+			}
+
+			if readWriteErr != nil {
+				done = true
+			}
+			if done && readWriteErr != io.EOF && readWriteErr != nil {
 				break
 			}
 		}
-		if b.w != nil {
-			n, writeErr := b.Push(buf)
-			res.wrote(n, writeErr)
-			if writeErr != nil {
+
+		if done {
+			break
+		}
+	}
+	if readWriteErr == nil || readWriteErr == io.EOF {
+		for i, s := range p.steps {
+			var flushBuf []byte
+			flushBuf, readWriteErr = s.flush()
+			if readWriteErr != io.EOF && readWriteErr != nil {
 				break
 			}
-		}
-	}
-	if res.IsSuccess() {
-		for _, b := range p.bridges {
-			if b.r != nil {
-				if x, ok := b.r.(Flusher); ok {
-					res.read(x.Flush())
+			for _, ss := range p.steps[i:] {
+				n, readWriteErr = ss.do(flushBuf)
+				if _, ok := ss.(writeStep); ok {
+					writeLen += n
 				}
-			}
-			if b.w != nil {
-				if x, ok := b.w.(Flusher); ok {
-					res.wrote(x.Flush())
+				if readWriteErr != io.EOF && readWriteErr != nil {
+					return
 				}
 			}
 		}
 	}
+
 	return
-}
-
-// Copy provides status of the copy.
-type Copy struct {
-	ReadLen  int
-	WriteLen int
-	ReadErr  error
-	WriteErr error
-}
-
-func (c *Copy) read(n int, e error) {
-	c.ReadErr = e
-	c.ReadLen += n
-}
-
-func (c *Copy) wrote(n int, e error) {
-	c.WriteErr = e
-	c.WriteLen += n
-}
-
-// IsSuccess if reader returned io.EOF and the writer returned nil error.
-func (c Copy) IsSuccess() bool {
-	return (c.ReadErr == io.EOF || c.ReadErr == nil) && c.WriteErr == nil
-}
-
-// ReadError returns nil if err==io.EOF, returns error otherwise.
-func (c Copy) ReadError() error {
-	if c.ReadErr == io.EOF {
-		return nil
-	}
-	return c.ReadErr
-}
-
-// WriteError returns the write error.
-func (c Copy) WriteError() error {
-	return c.WriteErr
-}
-
-// Error returns one of read or write error message, excluding reader io.EOF error.
-func (c Copy) Error() string {
-	if c.ReadError() != nil {
-		return c.ReadError().Error()
-	}
-	return c.WriteError().Error()
-}
-
-// Wrote returns length of wrote bytes.
-func (c Copy) Wrote() int {
-	return c.WriteLen
-}
-
-// Read returns length of read bytes.
-func (c Copy) Read() int {
-	return c.ReadLen
-}
-
-type bridge struct {
-	r io.Reader
-	w io.Writer
-}
-
-func (b bridge) Pull(p []byte) (n int, readErr error) {
-	return b.r.Read(p)
-}
-
-func (b bridge) Push(p []byte) (n int, writeErr error) {
-	return b.w.Write(p)
 }

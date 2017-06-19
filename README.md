@@ -27,6 +27,7 @@ to
 
 ```go
   pipe := PP{}
+  
   pipe.
     Pull(src).
     Pull(outerReader1()).
