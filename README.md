@@ -11,16 +11,16 @@ go io.Copy(
     outerWriter2(
       outerWriter3(
         sink,
-      )
-    )
+      ),
+    ),
   ),
   outerReader3(
     outerReader2(
       outerReader1(
         src,
-      )
-    )
-  )
+      ),
+    ),
+  ),
 )
 
 ```
