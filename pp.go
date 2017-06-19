@@ -70,6 +70,7 @@ func (p PP) Copy(buf []byte) (writeLen int, readWriteErr error) {
 	for {
 		for _, s := range p.steps {
 			n, readWriteErr = s.do(buf)
+			buf = buf[0:n]
 
 			if _, ok := s.(writeStep); ok {
 				writeLen += n
