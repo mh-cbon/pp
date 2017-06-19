@@ -27,7 +27,7 @@ to
 
 ```go
   pipe := PP{}
-  
+
   pipe.
     Pull(src).
     Pull(outerReader1()).
@@ -38,8 +38,7 @@ to
     Push(outerWriter3()).
     Push(sink)
 
-  res := pipe.Copy(make([]byte, 1024))
-  log.Printf("read %v / wrote %v / err %v\n",res.Read(), res.Wrote(), res.Error())
+  log.Printf("wrote %v / err %v\n",pipe.Copy(make([]byte, 1024)))
 ```
 
 # Problem
