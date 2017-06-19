@@ -15,7 +15,7 @@ func TestReadErr(t *testing.T) {
 		Pull(pseudoTransform{"2", nil}).
 		Push(pseudoWriter{"3", nil})
 
-	_, err := pipe.Copy(make([]byte, 1024))
+	_, err := pipe.Copy(make([]byte, 10))
 	if err == nil {
 		t.Errorf("read error not returned on copy")
 	} else {
@@ -35,7 +35,7 @@ func TestTransformErr(t *testing.T) {
 		Pull(pseudoTransform{"2", errors.New("pseudoTransform 2")}).
 		Push(pseudoWriter{"3", nil})
 
-	_, err := pipe.Copy(make([]byte, 1024))
+	_, err := pipe.Copy(make([]byte, 10))
 	if err == nil {
 		t.Errorf("read error not returned on copy")
 	} else {
@@ -55,7 +55,7 @@ func TestWriteErr(t *testing.T) {
 		Pull(pseudoTransform{"2", nil}).
 		Push(pseudoWriter{"3", errors.New("pseudoWriter 1")})
 
-	_, err := pipe.Copy(make([]byte, 1024))
+	_, err := pipe.Copy(make([]byte, 10))
 	if err == nil {
 		t.Errorf("write error not returned on copy")
 	} else {
@@ -75,7 +75,7 @@ func TestReadFlushErr(t *testing.T) {
 		Pull(pseudoReaderFlusher{pseudoReader{"2", nil}, errors.New("flush 2")}).
 		Push(pseudoWriter{"3", nil})
 
-	_, err := pipe.Copy(make([]byte, 1024))
+	_, err := pipe.Copy(make([]byte, 10))
 	if err == nil {
 		t.Errorf("read flush error not returned on copy")
 	} else {
@@ -95,7 +95,7 @@ func TestWriteFlushErr(t *testing.T) {
 		Pull(pseudoReader{"2", nil}).
 		Push(pseudoWriterFlusher{pseudoWriter{"3", nil}, errors.New("flush 3")})
 
-	_, err := pipe.Copy(make([]byte, 1024))
+	_, err := pipe.Copy(make([]byte, 10))
 	if err == nil {
 		t.Errorf("write flush error not returned on copy")
 	} else {
@@ -124,11 +124,11 @@ type pseudoReader struct {
 }
 
 func (r pseudoReader) Read(p []byte) (n int, err error) {
-	log.Println("pseudoReader", r.n, string(p))
+	log.Printf("pseudoReader %v %q\n", r.n, string(p))
 	for i := range p {
 		p[i] = 'l'
 	}
-	log.Println("pseudoReader", r.n, string(p))
+	log.Printf("pseudoReader %v %q\n", r.n, string(p))
 	return len(p), r.err
 }
 
@@ -148,11 +148,11 @@ type pseudoTransform struct {
 }
 
 func (r pseudoTransform) Read(p []byte) (n int, err error) {
-	log.Println("pseudoTransform", r.n, string(p))
+	log.Printf("pseudoTransform %v %q\n", r.n, string(p))
 	for i := range p {
 		p[i] = 'L'
 	}
-	log.Println("pseudoTransform", r.n, string(p))
+	log.Printf("pseudoTransform %v %q\n", r.n, string(p))
 	return len(p), r.err
 }
 
@@ -162,7 +162,7 @@ type pseudoWriter struct {
 }
 
 func (w pseudoWriter) Write(p []byte) (n int, err error) {
-	log.Println("pseudoWriter", w.n, string(p))
+	log.Printf("pseudoWriter %v %q\n", w.n, string(p))
 	return len(p), w.err
 }
 
